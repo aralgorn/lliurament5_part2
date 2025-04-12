@@ -1,184 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine Image Model</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teachable Machine Image Model</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
 
-        h1 {
-            background-color: #2c3e50;
-            color: white;
-            padding: 1rem;
-            margin: 0;
-        }
+    h1 {
+      background-color: #2c3e50;
+      color: white;
+      padding: 1rem;
+      margin: 0;
+    }
 
-        .container {
-            padding: 2rem;
-        }
+    .container {
+      padding: 2rem;
+    }
 
-        #webcam-container, #image-preview {
-            margin: 1rem auto;
-            width: 200px;
-            height: 200px;
-            border: 2px dashed #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-        }
+    #preview-box {
+      margin: 1rem auto;
+      width: 200px;
+      height: 200px;
+      border: 2px dashed #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+    }
 
-        #label-container {
-            margin-top: 1rem;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
+    #label-container {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
 
-        button, input[type="file"] {
-            margin: 0.5rem;
-            padding: 0.6rem 1rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 8px;
-            background-color: #3498db;
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
+    button, input[type="file"] {
+      margin: 0.5rem;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-        button:hover {
-            background-color: #2980b9;
-        }
+    button:hover {
+      background-color: #2980b9;
+    }
 
-        input[type="file"] {
-            background-color: #27ae60;
-        }
+    input[type="file"] {
+      background-color: #27ae60;
+    }
 
-        input[type="file"]:hover {
-            background-color: #219150;
-        }
+    input[type="file"]:hover {
+      background-color: #219150;
+    }
 
-        img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-    </style>
+    img, canvas {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
 </head>
 <body>
-    <h1>Teachable Machine - Clasificador de Imagenes</h1>
-    <div class="container">
-        <button type="button" onclick="init()">Iniciar Webcam</button>
-        <input type="file" accept="image/*" onchange="handleImageUpload(event)">
-        
-        <div id="webcam-container"></div>
-        <div id="image-preview"></div>
-        <div id="label-container"></div>
-    </div>
+  <h1>Teachable Machine - Clasificador de Imágenes</h1>
+  <div class="container">
+    <button onclick="init()">Iniciar Webcam</button>
+    <input type="file" accept="image/*" onchange="handleImageUpload(event)" />
+    
+    <div id="preview-box"></div>
+    <div id="label-container"></div>
+  </div>
 
-    <script type="text/javascript">
-        const URL = "./my_model/"; 
+  <script type="text/javascript">
+    const URL = "./my_model/"; 
+    let model, webcam, labelContainer, maxPredictions;
 
-        let model, webcam, labelContainer, maxPredictions;
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
 
-        async function init() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
 
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
+      if (webcam) webcam.stop(); // detener si ya estaba corriendo
+      document.getElementById("preview-box").innerHTML = "";
 
-            // Iniciar la webcam
-            const flip = true;
-            webcam = new tmImage.Webcam(200, 200, flip);
-            await webcam.setup();
-            await webcam.play();
-            window.requestAnimationFrame(loop);
+      // Iniciar webcam
+      const flip = true;
+      webcam = new tmImage.Webcam(200, 200, flip);
+      await webcam.setup();
+      await webcam.play();
+      window.requestAnimationFrame(loop);
 
-            document.getElementById("webcam-container").innerHTML = ""; // limpiar
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
+      document.getElementById("preview-box").appendChild(webcam.canvas);
 
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = "";
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+      labelContainer = document.getElementById("label-container");
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+    }
 
-            // Ocultar imagen previa al activar webcam
-            document.getElementById("image-preview").innerHTML = "";
+    async function loop() {
+      webcam.update();
+      await predict(webcam.canvas);
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict(source) {
+      const prediction = await model.predict(source);
+      for (let i = 0; i < maxPredictions; i++) {
+        const classPrediction =
+          prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+        labelContainer.childNodes[i].innerHTML = classPrediction;
+      }
+    }
+
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      if (!model) {
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+      }
+
+      // Detener y ocultar la webcam si está activa
+      if (webcam) {
+        webcam.stop();
+        webcam = null;
+      }
+
+      const image = new Image();
+      image.onload = async () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        // Mostrar solo la imagen subida
+        const preview = document.getElementById("preview-box");
+        preview.innerHTML = "";
+        preview.appendChild(image);
+
+        // Mostrar predicciones
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+          labelContainer.appendChild(document.createElement("div"));
         }
 
-        async function loop() {
-            webcam.update();
-            await predict(webcam.canvas);
-            window.requestAnimationFrame(loop);
-        }
+        await predict(canvas);
+      };
 
-        async function predict(source) {
-            const prediction = await model.predict(source);
-            for (let i = 0; i < maxPredictions; i++) {
-                const classPrediction =
-                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
-            }
-        }
-
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
-
-            // Cargar modelo si no está cargado aún
-            if (!model) {
-                model = await tmImage.load(modelURL, metadataURL);
-                maxPredictions = model.getTotalClasses();
-            }
-
-            const image = new Image();
-            image.onload = async () => {
-                // Detener webcam si está activa
-                if (webcam) {
-                    webcam.stop();
-                    document.getElementById("webcam-container").innerHTML = "";
-                }
-
-                // Dibujar imagen en canvas
-                const canvas = document.createElement("canvas");
-                canvas.width = 200;
-                canvas.height = 200;
-                const ctx = canvas.getContext("2d");
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-                // Mostrar imagen
-                const preview = document.getElementById("image-preview");
-                preview.innerHTML = "";
-                preview.appendChild(image);
-
-                // Mostrar predicciones
-                labelContainer = document.getElementById("label-container");
-                labelContainer.innerHTML = "";
-                for (let i = 0; i < maxPredictions; i++) {
-                    labelContainer.appendChild(document.createElement("div"));
-                }
-
-                // Predecir desde canvas
-                await predict(canvas);
-            };
-
-            image.src = URL.createObjectURL(file);
-        }
-    </script>
+      image.src = URL.createObjectURL(file);
+    }
+  </script>
 </body>
 </html>
+
