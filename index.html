@@ -153,31 +153,37 @@
         webcam = null;
       }
 
-      const image = new Image();
-      image.onload = async () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 200;
-        canvas.height = 200;
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const image = new Image();
+        image.onload = async () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 200;
+          canvas.height = 200;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-        // Mostrar imagen subida
-        const preview = document.getElementById("preview-box");
-        preview.innerHTML = "";
-        preview.appendChild(image);
+          // Mostrar imagen subida
+          const preview = document.getElementById("preview-box");
+          preview.innerHTML = "";
+          preview.appendChild(image);
 
-        // Preparar contenedor de resultados
-        labelContainer = document.getElementById("label-container");
-        labelContainer.innerHTML = "";
-        for (let i = 0; i < maxPredictions; i++) {
-          labelContainer.appendChild(document.createElement("div"));
-        }
+          // Preparar contenedor de resultados
+          labelContainer = document.getElementById("label-container");
+          labelContainer.innerHTML = "";
+          for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.appendChild(document.createElement("div"));
+          }
 
-        await predict(canvas);
+          await predict(canvas);
+        };
+        
+        image.src = e.target.result;
       };
 
-      image.src = URL.createObjectURL(file);
+      reader.readAsDataURL(file); // Convierte el archivo a Data URL
     }
   </script>
 </body>
