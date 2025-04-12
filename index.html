@@ -55,12 +55,16 @@
             transition: background 0.3s ease;
         }
 
-        button:hover, input[type="file"]:hover {
+        button:hover {
             background-color: #2980b9;
         }
 
         input[type="file"] {
             background-color: #27ae60;
+        }
+
+        input[type="file"]:hover {
+            background-color: #219150;
         }
 
         img {
@@ -82,7 +86,7 @@
     </div>
 
     <script type="text/javascript">
-        const URL = "./my_model/"; // Carpeta donde están model.json y metadata.json
+        const URL = "./my_model/"; 
 
         let model, webcam, labelContainer, maxPredictions;
 
@@ -135,41 +139,46 @@
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
+            // Cargar modelo si no está cargado aún
             if (!model) {
                 model = await tmImage.load(modelURL, metadataURL);
                 maxPredictions = model.getTotalClasses();
             }
 
-            const image = document.createElement("img");
-            image.src = URL.createObjectURL(file);
+            const image = new Image();
             image.onload = async () => {
-                // Limpiar vista webcam si estaba activa
+                // Detener webcam si está activa
                 if (webcam) {
                     webcam.stop();
                     document.getElementById("webcam-container").innerHTML = "";
                 }
 
+                // Dibujar imagen en canvas
                 const canvas = document.createElement("canvas");
                 canvas.width = 200;
                 canvas.height = 200;
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(image, 0, 0, 200, 200);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
+                // Mostrar imagen
+                const preview = document.getElementById("image-preview");
+                preview.innerHTML = "";
+                preview.appendChild(image);
+
+                // Mostrar predicciones
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = "";
+                for (let i = 0; i < maxPredictions; i++) {
+                    labelContainer.appendChild(document.createElement("div"));
+                }
+
+                // Predecir desde canvas
                 await predict(canvas);
             };
 
-            const preview = document.getElementById("image-preview");
-            preview.innerHTML = ""; // Limpiar vista previa anterior
-            preview.appendChild(image);
-
-            // Mostrar predicciones
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = "";
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+            image.src = URL.createObjectURL(file);
         }
     </script>
 </body>
 </html>
-
