@@ -85,7 +85,8 @@
   </div>
 
   <script type="text/javascript">
-    const URL = "./my_model/"; 
+    const URL = "./my_model/";
+
     let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
@@ -95,7 +96,12 @@
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
-      if (webcam) webcam.stop(); // detener si ya estaba corriendo
+      // Detener webcam si ya estaba activa
+      if (webcam) {
+        webcam.stop();
+      }
+
+      // Limpiar vista
       document.getElementById("preview-box").innerHTML = "";
 
       // Iniciar webcam
@@ -156,12 +162,12 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-        // Mostrar solo la imagen subida
+        // Mostrar imagen subida
         const preview = document.getElementById("preview-box");
         preview.innerHTML = "";
         preview.appendChild(image);
 
-        // Mostrar predicciones
+        // Preparar contenedor de resultados
         labelContainer = document.getElementById("label-container");
         labelContainer.innerHTML = "";
         for (let i = 0; i < maxPredictions; i++) {
@@ -176,4 +182,3 @@
   </script>
 </body>
 </html>
-
